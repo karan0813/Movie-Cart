@@ -9,6 +9,7 @@ const Navbar = () => {
   const pathname = usePathname();
   const favorites = useSelector((state) => state.favorites);
   const favoritesCount = favorites.length;
+  console.log();
 
   return (
     <nav className="bg-gray-800 p-4 shadow-md">
