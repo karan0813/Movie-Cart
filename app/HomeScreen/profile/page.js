@@ -49,9 +49,10 @@ const Profile = () => {
     <div className="container mx-auto p-5">
       <div className="bg-white shadow-md rounded-lg p-6">
         <div className="flex items-center">
-          <img
+          <Image
             src={user.profilePicture || "https://via.placeholder.com/150"}
-            alt="Profile Picture"
+            width={24}
+            height={24}
             className="w-24 h-24 rounded-full border-2 border-blue-500"
           />
           <div className="ml-4">

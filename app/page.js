@@ -9,7 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useRouter } from "next/navigation";
 import LoginScreenNavbar from "@/components/LoginScreenNavbar";
 
-const page = () => {
+const Page = () => {
   const [switchRegister, setswitchRegister] = useState(false);
   const router = useRouter();
 
@@ -216,12 +216,12 @@ const page = () => {
 
           {!switchRegister ? (
             <p className="signin">
-              Already have an account?{" "}
+              Already have an account?
               <a onClick={() => setswitchRegister(true)}>Sign In</a>
             </p>
           ) : (
             <p className="signin">
-              Don't have an account?{" "}
+              Dont have an account?
               <a onClick={() => setswitchRegister(false)}>Sign Up</a>
             </p>
           )}
@@ -231,4 +231,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;
