@@ -1,101 +1,234 @@
-import Image from "next/image";
+"use client";
+import "./globals.css";
+import React, { useState } from "react";
+import { useFormik } from "formik";
+import * as yup from "yup";
+import { openDB } from "idb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useRouter } from "next/navigation";
+import LoginScreenNavbar from "@/components/LoginScreenNavbar";
 
-export default function Home() {
+const page = () => {
+  const [switchRegister, setswitchRegister] = useState(false);
+  const router = useRouter();
+
+  // Function to initialize IndexedDB
+  const initDB = async () => {
+    return openDB("UserDatabase", 1, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains("users")) {
+          db.createObjectStore("users", { keyPath: "email" });
+        }
+      },
+    });
+  };
+
+  // Function to check if user exists
+  const checkUserExists = async (email) => {
+    const db = await initDB();
+    const tx = db.transaction("users", "readonly");
+    const store = tx.objectStore("users");
+    return store.get(email);
+  };
+
+  // Function to register a user
+  const registerUser = async (user) => {
+    const db = await initDB();
+    const tx = db.transaction("users", "readwrite");
+    const store = tx.objectStore("users");
+    await store.add(user);
+    console.log(user);
+
+    localStorage.setItem("email", user.email);
+    toast.success("User registered successfully!");
+    router.push("/HomeScreen");
+  };
+
+  // Function to handle login
+  const handleLogin = async (email, password) => {
+    const user = await checkUserExists(email);
+    if (user) {
+      if (user.Password === password) {
+        localStorage.setItem("email", email);
+        toast.success("Login successful!");
+        router.push("/HomeScreen");
+      } else {
+        toast.error("Incorrect password!");
+      }
+    } else {
+      toast.error("User not found! Please register.");
+    }
+  };
+
+  const validationSchema = yup.object({
+    Firstname: !switchRegister
+      ? yup
+          .string("Enter your first name")
+          .min(2, "First name should be at least 2 characters long")
+          .required("First name is required")
+      : yup.string(),
+
+    Lastname: !switchRegister
+      ? yup
+          .string("Enter your last name")
+          .min(2, "Last name should be at least 2 characters long")
+          .required("Last name is required")
+      : yup.string(),
+
+    email: yup
+      .string("Enter your email")
+      .email("Enter a valid email")
+      .required("Email is required"),
+
+    Password: yup
+      .string("Enter your password")
+      .min(6, "Password should be at least 6 characters long")
+      .required("Password is required"),
+
+    cPassword: !switchRegister
+      ? yup
+          .string("Confirm your password")
+          .oneOf([yup.ref("Password"), null], "Passwords must match")
+          .required("Confirm password is required")
+      : yup.string(),
+  });
+
+  const formik = useFormik({
+    initialValues: {
+      Firstname: "",
+      Lastname: "",
+      email: "",
+      Password: "",
+      cPassword: "",
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      if (!switchRegister) {
+        // Register the user
+        const userExists = await checkUserExists(values.email);
+        if (userExists) {
+          toast.error("User already exists. Please sign in.");
+        } else {
+          await registerUser(values);
+        }
+      } else {
+        // Login the user
+        await handleLogin(values.email, values.Password);
+      }
+    },
+  });
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <>
+      <LoginScreenNavbar />
+      <div className=" flex justify-center items-center flex-col h-screen">
+        <ToastContainer />
+        <form className="form" onSubmit={formik.handleSubmit}>
+          <p className="title">{!switchRegister ? "Register" : "Sign In"} </p>
+          <p className="message">
+            {!switchRegister
+              ? "Signup now and get full access to our app."
+              : "Sign in to continue."}
+          </p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+          {!switchRegister && (
+            <div className="flex">
+              <label>
+                <input
+                  className="input"
+                  type="text"
+                  name="Firstname"
+                  value={formik.values.Firstname}
+                  onChange={formik.handleChange}
+                />
+                <span>Firstname</span>
+              </label>
+              {formik.touched.Firstname && formik.errors.Firstname && (
+                <p className="error">{formik.errors.Firstname}</p>
+              )}
+
+              <label>
+                <input
+                  className="input"
+                  type="text"
+                  name="Lastname"
+                  value={formik.values.Lastname}
+                  onChange={formik.handleChange}
+                />
+                <span>Lastname</span>
+              </label>
+              {formik.touched.Lastname && formik.errors.Lastname && (
+                <p className="error">{formik.errors.Lastname}</p>
+              )}
+            </div>
+          )}
+
+          <label>
+            <input
+              className="input"
+              type="email"
+              name="email"
+              value={formik.values.email}
+              onChange={formik.handleChange}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <span>Email</span>
+          </label>
+          {formik.touched.email && formik.errors.email && (
+            <p className="error">{formik.errors.email}</p>
+          )}
+
+          <label>
+            <input
+              className="input"
+              type="password"
+              name="Password"
+              value={formik.values.Password}
+              onChange={formik.handleChange}
+            />
+            <span>Password</span>
+          </label>
+          {formik.touched.Password && formik.errors.Password && (
+            <p className="error">{formik.errors.Password}</p>
+          )}
+
+          {!switchRegister && (
+            <>
+              <label>
+                <input
+                  className="input"
+                  type="password"
+                  name="cPassword"
+                  value={formik.values.cPassword}
+                  onChange={formik.handleChange}
+                />
+                <span>Confirm password</span>
+              </label>
+              {formik.touched.cPassword && formik.errors.cPassword && (
+                <p className="error">{formik.errors.cPassword}</p>
+              )}
+            </>
+          )}
+
+          <button className="submit" type="submit">
+            Submit
+          </button>
+
+          {!switchRegister ? (
+            <p className="signin">
+              Already have an account?{" "}
+              <a onClick={() => setswitchRegister(true)}>Sign In</a>
+            </p>
+          ) : (
+            <p className="signin">
+              Don't have an account?{" "}
+              <a onClick={() => setswitchRegister(false)}>Sign Up</a>
+            </p>
+          )}
+        </form>
+      </div>
+    </>
   );
-}
+};
+
+export default page;

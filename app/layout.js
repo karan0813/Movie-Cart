@@ -1,5 +1,7 @@
 import localFont from "next/font/local";
 import "./globals.css";
+import { Providers } from "./HomeScreen/Provider";
+import LoginScreenNavbar from "@/components/LoginScreenNavbar";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -23,7 +25,12 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Providers>
+          {/* <div className="flex justify-center items-center flex-col h-screen"> */}
+
+          {children}
+          {/* </div> */}
+        </Providers>
       </body>
     </html>
   );
